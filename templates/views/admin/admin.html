@@ -1,0 +1,78 @@
+{% extends "layouts/adminLayout.html" %}
+
+    {% block title %}Administrador{% endblock %}
+{% block body %}
+    <h1>Bienvenido {{ current_user.nombreCompleto }}</h1>
+    <div class="container-fluid mt-2">
+        <div class="table-responsive">
+            <table class="table table-secondary">
+                <thead>
+                    <tr>
+                        <th scope="col">Id:</th>
+                        <th scope="col">Nombre de usuario:</th>
+                        <th scope="col">Rol:</th>
+                        <th scope="col">Nombre completo:</th>
+                        <th scope="col">Departamento:</th>
+                        <th scope="col">Unidad:</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                        <tr class="scope">
+                            <td>{{ usuario.id }}</td>
+                            <td>{{ usuario.nombreUsuario }}</td>
+                            <td>{{ usuario.rol }}</td>
+                            <td>{{ usuario.nombreCompleto }}</td>
+                            <td>{{ usuario.departamento }}</td>
+                            <td>{{ usuario.unidad }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+        </div>
+        
+    
+        <div class="container-fluid mt-2">
+            <div class="table-responsive">
+                <table class="table table-secondary">
+                    <thead>
+                        <tr>
+                            <th scope="col">Id:</th>
+                            <th scope="col">Número de solicitud:</th>
+                            <th scope="col">Fecha de ingreso:</th>
+                            <th scope="col">Fecha de vencimiento:</th>
+                            <th scope="col">Nombre del solicitante:</th>
+                            <th scope="col">Materia:</th>
+                            <th scope="col">Tipo:</th>
+                            <th scope="col">Departamento:</th>
+                            <th scope="col">Funcionario:</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for solicitud in solicitudes %}
+                            <tr class="scope">
+                                <td>{{ solicitud.idSolicitud }}</td>
+                                <td>{{ solicitud.numero }}</td>
+                                <td>{{ solicitud.fechaDeIngreso }}</td>
+                                <td>{{ solicitud.fechaDeVencimiento }}</td>
+                                <td>{{ solicitud.nombreSolicitante }}</td>
+                                <td>{{ solicitud.materia }}</td>
+                                <td>{{ solicitud.tipo }}</td>
+                                <td>{{ solicitud.departamento }}</td>
+                                <td>{{ solicitud.usuarioID }}</td>
+                                <td>
+                                    <a name="editSolicitud" id="editSolicitud" class="btn btn-info" href="/edits/{{solicitud.idSolicitud}}" role="button">Editar</a>
+                                    <a name="deleteSolicitud" id="deleteSolicitud" class="btn btn-danger" href="/deletes/{{solicitud.idSolicitud}}" role="button">Eliminar</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+            </div>
+            
+        
+        </div>
+{% endblock %}

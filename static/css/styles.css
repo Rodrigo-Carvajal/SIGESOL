@@ -1,0 +1,17 @@
+.container {
+    display: flex;
+    justify-content: center;
+    align-items:center;
+    background-color: rgba(rgb(141, 141, 141), rgb(153, 157, 153), rgba(151, 151, 151, 0.747), alpha);
+}
+
+.login {
+    background-color: rgb(255, 255, 255);
+    border-radius: 2cm;
+    padding: 1em 1em 1em 1em;
+}
+
+.logoLogin {
+    height: 15rem;
+    width: 15rem;
+}
