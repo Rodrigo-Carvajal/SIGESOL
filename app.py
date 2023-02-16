@@ -110,6 +110,13 @@ def get_solicitudes():
         solicitudes.append({"idSolicitud":solicitud.idSolicitud, "numero":solicitud.numero, "fechaDeIngreso":solicitud.fechaDeIngreso, "fechaDeVencimiento":solicitud.fechaDeVencimiento, "nombreSolicitante":solicitud.nombreSolicitante, "materia":solicitud.materia, "tipo":solicitud.tipo, "departamento":solicitud.departamento, "usuarioID":solicitud.usuarioID})
     return solicitudes
 
+def get_solicitudes_depto(departamento):
+    solicitudes = []
+    dpto_solicitudes = Solicitud.query.filter_by(departamento=departamento)
+    for solicitud in dpto_solicitudes:
+        solicitudes.append({"idSolicitud":solicitud.idSolicitud, "numero":solicitud.numero, "fechaDeIngreso":solicitud.fechaDeIngreso, "fechaDeVencimiento":solicitud.fechaDeVencimiento, "nombreSolicitante":solicitud.nombreSolicitante, "materia":solicitud.materia, "tipo":solicitud.tipo, "departamento":solicitud.departamento, "usuarioID":solicitud.usuarioID})
+    return solicitudes
+
 @login_manager.user_loader
 def load_user(id):
     return Usuario.query.get(int(id))
@@ -232,10 +239,21 @@ def oirsCrudSolicitudes():
 def funcionario():
     return render_template('views/funcionario/funcionario.html')
 
-#Rutas CRUD
+@app.route('/solIngresadas', methods=['GET','POST'])
+@login_required
+def solIngresadas():
+    solicitudes = get_solicitudes()
+    return render_template('/views/funcionario/solIngresadas.html', solicitudes=solicitudes)
+
+@app.route('/solPendientes', methods=['GET','POST'])
+@login_required
+def solPendientes():
+    
+    return render_template('/views/funcionario')
+
+#####     Rutas CRUD     #####
 
 ###   UPDATES   ###
-
 #UPDATE USUARIO
 @app.route('/editu/<int:id>', methods=['GET','POST'])
 @login_required
@@ -253,10 +271,11 @@ def edit_usuario(id):
     usuario = Usuario.query.filter_by(id=id).first()
     return render_template('views/admin/editarUsuario.html', usuario=usuario)
 
-#UPDATE SOLICITUD
-@app.route('/edits/<int:idSolicitud>', methods=['GET','POST'])
+#UPDATE SOLICITUD(OIRS)
+#Edit de solicitud que redirige a la vista de OIRS
+@app.route('/oedits/<int:idSolicitud>', methods=['GET','POST'])
 @login_required
-def edit_solicitud(idSolicitud):
+def Oedit_solicitud(idSolicitud):
     if request.method == 'POST':
         solicitud = Solicitud.query.filter_by(idSolicitud=idSolicitud).first()
         solicitud.numero = request.form['numero']
@@ -268,19 +287,31 @@ def edit_solicitud(idSolicitud):
         solicitud.departamento = request.form['departamento']
         solicitud.usuarioID = request.form['funcionario']
         db.session.commit()
-        if current_user.rol == "Administrador":
-            return redirect(url_for('adminCrudSolicitudes'))
-        elif current_user.rol == "OIRS":
-            return redirect(url_for('oirsCrudSolicitudes'))
-    usuario = Usuario.query.filter_by(id=id).first()
-    if current_user.rol == "Administrador":
-            return render_template('views/editarSolicitud.html', usuario=usuario)
-    elif current_user.rol == "OIRS":
-        return render_template('views/editarSolicitud.html', usuario=usuario)
-    
+        return redirect(url_for('oirsCrudSolicitudes'))
+    solicitud = Solicitud.query.filter_by(idSolicitud=idSolicitud).first()
+    return render_template('views/editarSolicitud.html',solicitud=solicitud)
+
+#UPDATE SOLICITUD(Admin)
+#Edit de solicitud que redirige a la vista de Admin
+@app.route('/aedits/<int:idSolicitud>', methods=['GET','POST'])
+@login_required
+def Aedit_solicitud(idSolicitud):
+    if request.method == 'POST':
+        solicitud = Solicitud.query.filter_by(idSolicitud=idSolicitud).first()
+        solicitud.numero = request.form['numero']
+        solicitud.fechaDeIngreso = request.form['fechaDeIngreso']
+        solicitud.fechaDeVencimiento = request.form['fechaDeVencimiento']
+        solicitud.nombreSolicitante = request.form['nombreSolicitante']
+        solicitud.materia = request.form['materia']
+        solicitud.tipo = request.form['tipo']
+        solicitud.departamento = request.form['departamento']
+        solicitud.usuarioID = request.form['funcionario']
+        db.session.commit()
+        return redirect(url_for('adminCrudSolicitudes'))
+    solicitud = Solicitud.query.filter_by(idSolicitud=idSolicitud).first()
+    return render_template('views/editarSolicitud.html',solicitud=solicitud)
 
 ###   DELETES   ###
-
 #DELETE SOLICITUD
 @app.route('/deletes/<int:idSolicitud>')
 @login_required
@@ -300,7 +331,6 @@ def delete_usuario(id):
     db.session.commit()
     usuarios = get_users()
     return redirect(url_for('adminCrudUsuarios', usuarios=usuarios))
-
 
 if __name__ == '__main__':
     app.config.from_object(config['development'])

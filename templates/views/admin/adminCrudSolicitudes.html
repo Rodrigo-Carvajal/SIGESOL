@@ -104,17 +104,14 @@
                         <td>{{ solicitud.departamento }}</td>
                         <td>{{ solicitud.usuarioID }}</td>
                         <td>
-                            <a name="editSolicitud" id="editSolicitud" class="btn btn-info" href="/edits/{{solicitud.idSolicitud}}" role="button">Editar</a>
+                            <a name="editSolicitud" id="editSolicitud" class="btn btn-info" href="/aedits/{{solicitud.idSolicitud}}" role="button">Editar</a>
                             <a name="deleteSolicitud" id="deleteSolicitud" class="btn btn-danger" href="/deletes/{{solicitud.idSolicitud}}" role="button">Eliminar</a>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-        
     </div>
-    
-
 </div>
 {% endblock %}
    

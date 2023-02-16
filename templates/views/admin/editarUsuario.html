@@ -21,7 +21,7 @@
                 <div class="form-floating mb-3">
                     <div class="input-group mb-3">
                         <select class="form-select" id="rol" name="rol" value="{{ usuario.rol }}">
-                        <option selected>Elegir un rol</option>
+                        <option selected>{{ usuario.rol }}</option>
                         <option value="Administrador">Administrador</option>
                         <option value="Funcionario">Funcionario</option>
                         <option value="OIRS">OIRS</option>
@@ -31,7 +31,7 @@
                 <div class="form-floating mb-3">
                     <div class="input-group mb-3">
                         <select class="form-select" id="departamento" name="departamento" value="{{ usuario.departamento }}">
-                        <option selected>Elegir un departamento</option>
+                        <option selected>{{ usuario.departamento }}</option>
                         <option value="Departamento administrativo">Departamento administrativo</option>
                         <option value="Departamento de fiscalización">Departamento de fiscalización</option>            
                         <option value="Departamento jurídico">Departamento jurídico</option>
@@ -45,7 +45,7 @@
                 <div class="form-floating mb-3">
                     <div class="input-group mb-3">
                         <select class="form-select" id="unidad" name="unidad" value="{{ usuario.unidad }}">
-                        <option selected>Elegir una unidad</option>
+                        <option selected>{{ usuario.unidad }}</option>
                         <option value="Almacén">Almacén</option>
                         <option value="Asistencia">Asistencia</option>            
                         <option value="Asistente social">Asistente social</option>
