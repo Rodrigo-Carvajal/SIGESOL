@@ -50,6 +50,7 @@ class Solicitud(db.Model):
     idSolicitud = db.Column(db.Integer, primary_key=True)
     numero = db.Column(db.String(20), nullable=False)
     fechaDeIngreso = db.Column(db.Date, nullable=False)
+    horaDeIngreso = db.Column(db.Time, nullable=False)
     fechaDeVencimiento = db.Column(db.Date, nullable=False)
     nombreSolicitante = db.Column(db.String(30), nullable=False)
     materia = db.Column(db.String(100), nullable=False)
@@ -233,23 +234,29 @@ def oirsCrudSolicitudes():
         return redirect(url_for('oirsCrudSolicitudes'))
     return render_template('views/oirs/oirsCrudSolicitudes.html', solicitudes=solicitudes)
 
+#RUTAS SECRETARÍA
+@app.route('/secretaria', methods=['GET','POST'])
+@login_required
+def secretaria():
+    return render_template('/views/secretaria/secretaria.html')
+
 #RUTAS FUNCIONARIO
 @app.route('/funcionario', methods=['GET','POST'])
 @login_required
 def funcionario():
     return render_template('views/funcionario/funcionario.html')
 
-@app.route('/solIngresadas', methods=['GET','POST'])
+@app.route('/funSolIngresadas', methods=['GET','POST'])
 @login_required
 def solIngresadas():
     solicitudes = get_solicitudes()
-    return render_template('/views/funcionario/solIngresadas.html', solicitudes=solicitudes)
+    return render_template('/views/funcionario/funSolIngresadas.html', solicitudes=solicitudes)
 
-@app.route('/solPendientes', methods=['GET','POST'])
+@app.route('/funSolPendientes', methods=['GET','POST'])
 @login_required
 def solPendientes():
-    
-    return render_template('/views/funcionario')
+    solicitudes = get_solicitudes()
+    return render_template('/views/funcionario/funSolPendientes.html', solicitudes=solicitudes)
 
 #####     Rutas CRUD     #####
 
