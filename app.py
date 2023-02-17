@@ -3,16 +3,18 @@ from flask import Flask, render_template, request, url_for, redirect, session, f
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
-from flask_socketio import emit
+from flask_socketio import SocketIO
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import config
+from datetime import datetime
 
 #Instanciación de objetos para la aplicación
 app = Flask(__name__)
 app.secret_key = 'smcnkaej42qownafa0ckco2q'
 csrf = CSRFProtect(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root@localhost/sigesol"
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root@localhost/sigesol2"
 db = SQLAlchemy()
+socketio = SocketIO(app)
 login_manager = LoginManager(app)
 login_manager.init_app(app)
 db.init_app(app)
@@ -26,7 +28,7 @@ class Usuario(UserMixin, db.Model):
     rol = db.Column(db.String(20), nullable=False)
     nombreCompleto = db.Column(db.String(50), nullable=False)
     departamento = db.Column(db.String(60), nullable=False)
-    unidad = db.Column(db.String(20), nullable=False)
+    unidad = db.Column(db.String(60), nullable=False)
     solicitudes = db.relationship('Solicitud', backref='usuario', lazy=True)
     estados = db.relationship('Estado', backref='usuario', lazy=True)
     
@@ -49,56 +51,65 @@ class Solicitud(db.Model):
     __tablename__ = 'solicitudes'
     idSolicitud = db.Column(db.Integer, primary_key=True)
     numero = db.Column(db.String(20), nullable=False)
-    fechaDeIngreso = db.Column(db.Date, nullable=False)
+    fechaDeIngreso = db.Column(db.Date, default=datetime.now().strftime('%Y-%m-%d'), nullable=False)
     horaDeIngreso = db.Column(db.Time, nullable=False)
     fechaDeVencimiento = db.Column(db.Date, nullable=False)
     nombreSolicitante = db.Column(db.String(30), nullable=False)
     materia = db.Column(db.String(100), nullable=False)
     tipo = db.Column(db.String(20), nullable=False)
-    departamento = db.Column(db.String(30), nullable=False)
+    departamento = db.Column(db.String(60), nullable=False)
+    unidad = db.Column(db.String(60))
     usuarioID = db.Column(db.String(30), db.ForeignKey('usuarios.nombreUsuario'), nullable=False)
     estados = db.relationship('Estado', backref='solicitud', lazy=True)
 
-    def __init__(self, idSolicitud, numero, fechaDeIngreso, fechaDeVencimiento, nombreSolicitante, materia, tipo, departamento, usuarioID):
+    def __init__(self, idSolicitud, numero, fechaDeIngreso, horaDeIngreso, fechaDeVencimiento, nombreSolicitante, materia, tipo, departamento, unidad, usuarioID):
         self.idSolicitud = idSolicitud
         self.numero = numero
         self.fechaDeIngreso = fechaDeIngreso
+        self.horaDeIngreso = horaDeIngreso
         self.fechaDeVencimiento = fechaDeVencimiento
         self.nombreSolicitante = nombreSolicitante
         self.materia = materia
         self.tipo = tipo
         self.departamento = departamento
+        self.unidad = unidad
         self.usuarioID = usuarioID
 
     def __repr__(self):
-        return f"Solicitud('{self.idSolicitud}','{self.numero}','{self.fechaDeIngreso}','{self.fechaDeVencimiento}','{self.nombreSolicitante}','{self.materia}','{self.tipo}','{self.departamento}')"
+        return f"Solicitud('{self.idSolicitud}','{self.numero}','{self.fechaDeIngreso}','{self.fechaDeVencimiento}','{self.nombreSolicitante}','{self.materia}','{self.tipo}','{self.departamento}','{self.unidad}','{self.usuarioID}')"
 
 class Estado(db.Model):
     __tablename__ = 'estadoSolicitudes'
-    idModificacion = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    idInternoDepto = db.Column(db.Integer, primary_key=True)
+    idModificacion = db.Column(db.Integer, primary_key=True)
+    fkIdSolicitud = db.Column(db.Integer, db.ForeignKey('solicitudes.idSolicitud'), nullable=False)
+    nombreUsuario = db.Column(db.String(20), db.ForeignKey('usuarios.nombreUsuario'), nullable=False)
+    descripcionProceso = db.Column(db.String(100), nullable=False)
     fechaModificacion = db.Column(db.Date, nullable=False)
     antecedentePDF = db.Column(db.LargeBinary)
-    actualizacion = db.Column(db.String(100), nullable=False)
-    fkIdUsuario = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    fkIdSolicitud = db.Column(db.Integer, db.ForeignKey('solicitudes.idSolicitud'), nullable=False)
+    designadoA = db.Column(db.String(60), nullable=False)
+    estado = db.Column(db.String(20), nullable=False)
 
-    def __init__(self, idModificacion, fechaModificacion, antecedentePDF, actualizacion, fkIdUsuario, fkIdSolicitud):
+    def __init__(self, idInternoDepto, fkIdSolicitud, idModificacion, nombreUsuario, descripcionProceso, fechaModificacion, antecedentePDF, designadoA, estado):
+        self.idInternoDepto = idInternoDepto
+        self.fkIdSolicitud = fkIdSolicitud
         self.idModificacion = idModificacion
+        self.nombreUsuario = nombreUsuario
+        self.descripcionProceso = descripcionProceso
         self.fechaModificacion = fechaModificacion
         self.antecedentePDF = antecedentePDF
-        self.actualizacion = actualizacion
-        self.fkIdUsuario = fkIdUsuario
-        self.fkIdSolicitud = fkIdSolicitud
+        self.designadoA = designadoA
+        self.estado = estado      
 
     def __repr__(self):
-        return f"Estado de la solicitud('{self.fkIdSolicitud}' modificada por el usuario '{self.fkIdUsuario}': '{self.idModificacion}', '{self.fechaModificacion}','{self.antecedentePDF}','{self.actualizacion}')"
+        return f"Estado de la solicitud('{self.idInternoDepto}','{self.fkIdSolicitud}' modificada N° '{self.idModificacion}' realizada por el usuario '{self.nombreUsuario}' en la fecha '{self.fechaModificacion}','{self.estado}','{self.designadoA}')"
 
 ###   Funciones   ###
 
 #Funcion que retorna todos los usuarios registrados en la base de datos
 def get_users():
     usuarios = []
-    all_usuarios = Usuario.query.all()
+    all_usuarios = db.session.execute(db.select(Usuario).order_by(Usuario.id)).scalars()
     for user in all_usuarios:
         usuarios.append({"id":user.id, "nombreUsuario":user.nombreUsuario, "rol":user.rol, "nombreCompleto":user.nombreCompleto, "departamento":user.departamento, "unidad":user.unidad})
     return usuarios
@@ -106,21 +117,16 @@ def get_users():
 #Funcion que retorna todos las solicitudes registrados en la base de datos
 def get_solicitudes():
     solicitudes = []
-    all_solicitudes = Solicitud.query.all()
+    #all_solicitudes = Solicitud.query.all()
+    all_solicitudes = db.session.execute(db.select(Solicitud).order_by(Solicitud.idSolicitud)).scalars()
     for solicitud in all_solicitudes:
-        solicitudes.append({"idSolicitud":solicitud.idSolicitud, "numero":solicitud.numero, "fechaDeIngreso":solicitud.fechaDeIngreso, "fechaDeVencimiento":solicitud.fechaDeVencimiento, "nombreSolicitante":solicitud.nombreSolicitante, "materia":solicitud.materia, "tipo":solicitud.tipo, "departamento":solicitud.departamento, "usuarioID":solicitud.usuarioID})
-    return solicitudes
-
-def get_solicitudes_depto(departamento):
-    solicitudes = []
-    dpto_solicitudes = Solicitud.query.filter_by(departamento=departamento)
-    for solicitud in dpto_solicitudes:
-        solicitudes.append({"idSolicitud":solicitud.idSolicitud, "numero":solicitud.numero, "fechaDeIngreso":solicitud.fechaDeIngreso, "fechaDeVencimiento":solicitud.fechaDeVencimiento, "nombreSolicitante":solicitud.nombreSolicitante, "materia":solicitud.materia, "tipo":solicitud.tipo, "departamento":solicitud.departamento, "usuarioID":solicitud.usuarioID})
+        solicitudes.append({"idSolicitud":solicitud.idSolicitud, "numero":solicitud.numero, "fechaDeIngreso":solicitud.fechaDeIngreso, "horaDeIngreso":solicitud.horaDeIngreso, "fechaDeVencimiento":solicitud.fechaDeVencimiento, "nombreSolicitante":solicitud.nombreSolicitante, "materia":solicitud.materia, "tipo":solicitud.tipo, "departamento":solicitud.departamento, "unidad":solicitud.unidad, "usuarioID":solicitud.usuarioID})
     return solicitudes
 
 @login_manager.user_loader
 def load_user(id):
-    return Usuario.query.get(int(id))
+    usuario = db.session.execute(db.select(Usuario).filter_by(id=id)).scalar_one()
+    return usuario
 
 #####     Rutas     #####
 #RUTAS PRINCIPALES Y DE AUTH
@@ -133,7 +139,7 @@ def login():
     if request.method == 'POST':
         nombreUsuario = request.form['nombreUsuario']
         contrasena = request.form['contrasena']
-        user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
+        user = db.session.execute(db.select(Usuario).filter_by(nombreUsuario=nombreUsuario)).scalar_one()
         if user:
             if user.contrasena == contrasena:
                 if user.rol == 'Administrador':
@@ -145,6 +151,9 @@ def login():
                 elif user.rol == 'Funcionario':
                     login_user(user)
                     return redirect(url_for('funcionario'))
+                elif user.rol == "Secretaria":
+                    login_user(user)
+                    return redirect(url_for('secretaria'))
                 else:
                     return '<h1>Usuario no cuenta con rol, contactar con administrador</h1>'
             else:
@@ -189,22 +198,25 @@ def adminCrudUsuarios():
 @login_required
 def adminCrudSolicitudes():
     solicitudes = get_solicitudes()
+    current_time = datetime.now().time().strftime('%H:%M')
     if request.method == "POST":
         solicitud = Solicitud(
             idSolicitud= request.form['idSolicitud'],
             numero = request.form['numero'],
             fechaDeIngreso = request.form['fechaDeIngreso'],
+            horaDeIngreso = request.form['horaDeIngreso'],
             fechaDeVencimiento = request.form['fechaDeVencimiento'],
             nombreSolicitante = request.form['nombreSolicitante'],
             materia = request.form['materia'],
             tipo = request.form['tipo'],
             departamento = request.form['departamento'],
+            unidad = request.form['unidad'],
             usuarioID = request.form['funcionario']
         )
         db.session.add(solicitud)
         db.session.commit()
         return redirect(url_for('adminCrudSolicitudes'))
-    return render_template('views/admin/adminCrudSolicitudes.html', solicitudes=solicitudes)
+    return render_template('views/admin/adminCrudSolicitudes.html', solicitudes=solicitudes, current_time=current_time)
 
 #RUTAS OIRS
 @app.route('/oirs', methods=['GET','POST'])
@@ -217,28 +229,57 @@ def oirs():
 @login_required
 def oirsCrudSolicitudes():
     solicitudes = get_solicitudes()
-    if request.method == "POST":
+    current_time = datetime.now().time().strftime('%H:%M')
+    if request.method == "POST":        
         solicitud = Solicitud(
             idSolicitud= request.form['idSolicitud'],
             numero = request.form['numero'],
             fechaDeIngreso = request.form['fechaDeIngreso'],
+            horaDeIngreso = request.form['horaDeIngreso'],
             fechaDeVencimiento = request.form['fechaDeVencimiento'],
             nombreSolicitante = request.form['nombreSolicitante'],
             materia = request.form['materia'],
             tipo = request.form['tipo'],
             departamento = request.form['departamento'],
+            unidad = request.form['unidad'],
             usuarioID = request.form['funcionario']
         )
         db.session.add(solicitud)
         db.session.commit()
         return redirect(url_for('oirsCrudSolicitudes'))
-    return render_template('views/oirs/oirsCrudSolicitudes.html', solicitudes=solicitudes)
+    return render_template('views/oirs/oirsCrudSolicitudes.html', solicitudes=solicitudes, current_time=current_time)
 
 #RUTAS SECRETARÍA
 @app.route('/secretaria', methods=['GET','POST'])
 @login_required
 def secretaria():
     return render_template('/views/secretaria/secretaria.html')
+
+@app.route('/secreSolIngresadas', methods=['GET','POST'])
+@login_required
+def secreSolIngresadas():
+    solicitudes = get_solicitudes()
+    if request.method == "POST":
+        solicitud = db.session.execute(db.select(Solicitud).filter_by())
+        solicitud.unidad = request.form['unidad']
+        db.session.commit()
+        return redirect(url_for('secreSolIngresadas'))
+    return render_template('views/secretaria/solicitudesSinUnidad.html', solicitudes=solicitudes)
+
+@app.route('/asignarUnidad/<int:idSolicitud>/<string:unidad>', methods=['GET','POST'])
+@login_required
+def asignarUnidad(idSolicitud,unidad):
+    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud))
+    solicitud.unidad = unidad
+    db.session.commit()
+    return redirect(url_for('secreSolIngresadas'))
+        
+
+@app.route('/secreSolPendientes', methods=['GET','POST'])
+@login_required
+def secreSolPendientes():
+    return render_template('<h1>pendientes</h1>')
+
 
 #RUTAS FUNCIONARIO
 @app.route('/funcionario', methods=['GET','POST'])
@@ -248,13 +289,13 @@ def funcionario():
 
 @app.route('/funSolIngresadas', methods=['GET','POST'])
 @login_required
-def solIngresadas():
+def funSolIngresadas():
     solicitudes = get_solicitudes()
     return render_template('/views/funcionario/funSolIngresadas.html', solicitudes=solicitudes)
 
 @app.route('/funSolPendientes', methods=['GET','POST'])
 @login_required
-def solPendientes():
+def funSolPendientes():
     solicitudes = get_solicitudes()
     return render_template('/views/funcionario/funSolPendientes.html', solicitudes=solicitudes)
 
@@ -266,7 +307,7 @@ def solPendientes():
 @login_required
 def edit_usuario(id):
     if request.method == 'POST':
-        usuario = Usuario.query.filter_by(id=id).first()
+        usuario = db.session.execute(db.select(Usuario).filter_by(id=id)).scalar_one()
         usuario.nombreUsuario = request.form['nombreUsuario']
         usuario.contrasena = request.form['contrasena']
         usuario.nombreCompleto = request.form['nombreCompleto']
@@ -275,7 +316,7 @@ def edit_usuario(id):
         usuario.unidad = request.form['unidad']
         db.session.commit()
         return redirect(url_for('adminCrudUsuarios'))
-    usuario = Usuario.query.filter_by(id=id).first()
+    usuario = db.session.execute(db.select(Usuario).filter_by(id=id)).scalar_one()
     return render_template('views/admin/editarUsuario.html', usuario=usuario)
 
 #UPDATE SOLICITUD(OIRS)
@@ -284,7 +325,7 @@ def edit_usuario(id):
 @login_required
 def Oedit_solicitud(idSolicitud):
     if request.method == 'POST':
-        solicitud = Solicitud.query.filter_by(idSolicitud=idSolicitud).first()
+        solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
         solicitud.numero = request.form['numero']
         solicitud.fechaDeIngreso = request.form['fechaDeIngreso']
         solicitud.fechaDeVencimiento = request.form['fechaDeVencimiento']
@@ -295,7 +336,7 @@ def Oedit_solicitud(idSolicitud):
         solicitud.usuarioID = request.form['funcionario']
         db.session.commit()
         return redirect(url_for('oirsCrudSolicitudes'))
-    solicitud = Solicitud.query.filter_by(idSolicitud=idSolicitud).first()
+    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
     return render_template('views/editarSolicitud.html',solicitud=solicitud)
 
 #UPDATE SOLICITUD(Admin)
@@ -304,7 +345,7 @@ def Oedit_solicitud(idSolicitud):
 @login_required
 def Aedit_solicitud(idSolicitud):
     if request.method == 'POST':
-        solicitud = Solicitud.query.filter_by(idSolicitud=idSolicitud).first()
+        solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
         solicitud.numero = request.form['numero']
         solicitud.fechaDeIngreso = request.form['fechaDeIngreso']
         solicitud.fechaDeVencimiento = request.form['fechaDeVencimiento']
@@ -315,7 +356,7 @@ def Aedit_solicitud(idSolicitud):
         solicitud.usuarioID = request.form['funcionario']
         db.session.commit()
         return redirect(url_for('adminCrudSolicitudes'))
-    solicitud = Solicitud.query.filter_by(idSolicitud=idSolicitud).first()
+    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
     return render_template('views/editarSolicitud.html',solicitud=solicitud)
 
 ###   DELETES   ###
@@ -323,7 +364,7 @@ def Aedit_solicitud(idSolicitud):
 @app.route('/deletes/<int:idSolicitud>')
 @login_required
 def delete_solicitud(idSolicitud):
-    solicitud = Solicitud.query.filter_by(idSolicitud=idSolicitud).first()
+    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
     db.session.delete(solicitud)
     db.session.commit()
     solicitudes = get_solicitudes()
@@ -333,7 +374,7 @@ def delete_solicitud(idSolicitud):
 @app.route('/deleteu/<int:id>')
 @login_required
 def delete_usuario(id):
-    usuario = Usuario.query.filter_by(id=id).first()
+    usuario = db.session.execute(db.select(Usuario).filter_by(id=id)).scalar_one()
     db.session.delete(usuario)
     db.session.commit()
     usuarios = get_users()

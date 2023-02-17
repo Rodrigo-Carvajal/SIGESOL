@@ -66,6 +66,8 @@
                         </select>
                     </div>
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="horaDeIngreso" id="horaDeIngreso" value="{{ current_time }}">
+                    <input type="hidden" name="unidad" id="unidad" value="Sin asginar">
                 </div>
             </div>
         </div>
