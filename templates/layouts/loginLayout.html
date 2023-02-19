@@ -8,10 +8,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.css') }}"> 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-<body class="container text-center justify-content-center p-3 mx-auto">  
-    {% block body %}
+<body class="container text-center justify-content-center fondonav ">  
+    <div class="d-flex justify-content-center align-items-center">
+        {% block body %}
 
-    {% endblock %}
+        {% endblock %}
+    </div>
+    
 </body>
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.js') }}"></script>
 </html>

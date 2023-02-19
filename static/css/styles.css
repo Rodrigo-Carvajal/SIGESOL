@@ -15,3 +15,17 @@
     height: 15rem;
     width: 15rem;
 }
+
+.fondonav{
+    background-color: #0b61d1c5;
+    background-image: url("../assets/dragon-scales.svg");
+    background-size: cover;
+}
+
+th {
+    border: 1px solid black;
+}
+
+td {
+    border: 1px dashed black;
+}

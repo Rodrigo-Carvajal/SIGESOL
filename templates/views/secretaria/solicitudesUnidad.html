@@ -1,11 +1,11 @@
-{% extends "layouts/funcionarioLayout.html" %}
+{% extends "layouts/secretariaLayout.html" %}
 
-{% block title %}Funcionario{% endblock %}
+{% block title %}Secretaria{% endblock %}
 
 {% block body %}
-<div class="container-fluid bg-dark">
+<div class="container-fluid mt-2">
     <div class="table-responsive">
-        <table class="table table-secondary mt-2">
+        <table class="table table-secondary">
             <thead>
                 <tr>
                     <th scope="col">Id:</th>
@@ -22,7 +22,7 @@
             </thead>
             <tbody>
                 {% for solicitud in solicitudes %}
-                    {% if solicitud.departamento == current_user.departamento and solicitud.unidad == current_user.unidad%}
+                    {% if solicitud.departamento == departamento and solicitud.unidad == unidad%}
                         <tr class="scope">
                             <td>{{ solicitud.idSolicitud }}</td>
                             <td>{{ solicitud.numero }}</td>
@@ -34,7 +34,7 @@
                             <td>{{ solicitud.tipo }}</td>
                             <td>{{ solicitud.usuarioID }}</td>
                             <td>
-                                <a name="gestionarSolicitud" id="gestionarSolicitud" class="btn btn-info" href="/gestionarSolicitud/{{current_user.id}}/{{solicitud.idSolicitud}}" role="button">Gestionar</a>
+                                <a name="editSolicitud" id="editSolicitud" class="btn btn-info" href="//{{solicitud.idSolicitud}}" role="button">Ver estado</a>
                             </td>
                         </tr>
                     {% endif %}
@@ -43,4 +43,5 @@
         </table>
     </div>
 </div>
+
 {% endblock %}

@@ -12,7 +12,7 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'smcnkaej42qownafa0ckco2q'
 csrf = CSRFProtect(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root@localhost/sigesol2"
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root@localhost/sigesol3"
 db = SQLAlchemy()
 socketio = SocketIO(app)
 login_manager = LoginManager(app)
@@ -51,9 +51,9 @@ class Solicitud(db.Model):
     __tablename__ = 'solicitudes'
     idSolicitud = db.Column(db.Integer, primary_key=True)
     numero = db.Column(db.String(20), nullable=False)
-    fechaDeIngreso = db.Column(db.Date, default=datetime.now().strftime('%Y-%m-%d'), nullable=False)
+    fechaDeIngreso = db.Column(db.Date, default=datetime.now().strftime('%d-%m-%Y'), nullable=False)
     horaDeIngreso = db.Column(db.Time, nullable=False)
-    fechaDeVencimiento = db.Column(db.Date, nullable=False)
+    fechaDeVencimiento = db.Column(db.Date, default=datetime.now().strftime('%d-%m-%Y'), nullable=False)
     nombreSolicitante = db.Column(db.String(30), nullable=False)
     materia = db.Column(db.String(100), nullable=False)
     tipo = db.Column(db.String(20), nullable=False)
@@ -85,7 +85,7 @@ class Estado(db.Model):
     fkIdSolicitud = db.Column(db.Integer, db.ForeignKey('solicitudes.idSolicitud'), nullable=False)
     nombreUsuario = db.Column(db.String(20), db.ForeignKey('usuarios.nombreUsuario'), nullable=False)
     descripcionProceso = db.Column(db.String(100), nullable=False)
-    fechaModificacion = db.Column(db.Date, nullable=False)
+    fechaModificacion = db.Column(db.Date, default=datetime.now().strftime('%d-%m-%Y'), nullable=False)
     antecedentePDF = db.Column(db.LargeBinary)
     designadoA = db.Column(db.String(60), nullable=False)
     estado = db.Column(db.String(20), nullable=False)
@@ -125,7 +125,7 @@ def get_solicitudes():
 
 @login_manager.user_loader
 def load_user(id):
-    usuario = db.session.execute(db.select(Usuario).filter_by(id=id)).scalar_one()
+    usuario = Usuario.query.filter_by(id=id).first()
     return usuario
 
 #####     Rutas     #####
@@ -139,27 +139,27 @@ def login():
     if request.method == 'POST':
         nombreUsuario = request.form['nombreUsuario']
         contrasena = request.form['contrasena']
-        user = db.session.execute(db.select(Usuario).filter_by(nombreUsuario=nombreUsuario)).scalar_one()
+        user = Usuario.query.filter_by(nombreUsuario=nombreUsuario).first()
         if user:
             if user.contrasena == contrasena:
+                login_user(user)
                 if user.rol == 'Administrador':
-                    login_user(user)
                     return redirect(url_for('admin'))
                 elif user.rol == 'OIRS':
-                    login_user(user)
                     return redirect(url_for('oirs'))
                 elif user.rol == 'Funcionario':
-                    login_user(user)
                     return redirect(url_for('funcionario'))
                 elif user.rol == "Secretaria":
-                    login_user(user)
                     return redirect(url_for('secretaria'))
                 else:
-                    return '<h1>Usuario no cuenta con rol, contactar con administrador</h1>'
+                    flash("Usuario no cuenta con rol, contactar con administrador", 'warning')
+                    return redirect(url_for('login'))
             else:
-                return '<h1>Contraseña incorrecta</h1>'
+                flash("Contraseña incorrecta", 'danger')
+                return redirect(url_for('login'))
         else:
-            return '<h1>Nombre de usuario incorrecto</h1>'
+            flash("Nombre de usuario incorrecto", 'danger')
+            return redirect(url_for('login'))
     return render_template('views/login.html')
 
 @app.route('/logout')
@@ -191,6 +191,7 @@ def adminCrudUsuarios():
         )
         db.session.add(user)
         db.session.commit()
+        flash("¡Usuario creado exitosamente!", 'success')
         return redirect(url_for('adminCrudUsuarios'))
     return render_template('views/admin/adminCrudUsuarios.html', usuarios=usuarios)
 
@@ -215,6 +216,7 @@ def adminCrudSolicitudes():
         )
         db.session.add(solicitud)
         db.session.commit()
+        flash("¡Solicitud creada exitosamente!", 'success')
         return redirect(url_for('adminCrudSolicitudes'))
     return render_template('views/admin/adminCrudSolicitudes.html', solicitudes=solicitudes, current_time=current_time)
 
@@ -260,26 +262,34 @@ def secretaria():
 def secreSolIngresadas():
     solicitudes = get_solicitudes()
     if request.method == "POST":
-        solicitud = db.session.execute(db.select(Solicitud).filter_by())
-        solicitud.unidad = request.form['unidad']
+        idSolicitud = request.form['idSolicitud']
+        return render_template('views/secretaria/asignarUnidad/'.format(idSolicitud))
+    return render_template('views/secretaria/secreSolIngresadas.html', solicitudes=solicitudes)
+
+@app.route('/asignarUnidad/<int:idSolicitud>', methods=['GET','POST'])
+@login_required
+def asignarUnidad(idSolicitud):
+    if request.method == "POST":
+        solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
+        unidad = request.form['unidad']
+        solicitud.unidad = unidad
         db.session.commit()
         return redirect(url_for('secreSolIngresadas'))
-    return render_template('views/secretaria/solicitudesSinUnidad.html', solicitudes=solicitudes)
-
-@app.route('/asignarUnidad/<int:idSolicitud>/<string:unidad>', methods=['GET','POST'])
-@login_required
-def asignarUnidad(idSolicitud,unidad):
-    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud))
-    solicitud.unidad = unidad
-    db.session.commit()
-    return redirect(url_for('secreSolIngresadas'))
+    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
+    return render_template('views/secretaria/asignarUnidad.html', solicitud=solicitud)
         
-
-@app.route('/secreSolPendientes', methods=['GET','POST'])
+@app.route('/<string:departamento>/<string:unidad>', methods=['GET','POST'])
 @login_required
-def secreSolPendientes():
-    return render_template('<h1>pendientes</h1>')
+def solicitudesunidad(departamento, unidad):
+    solicitudes = get_solicitudes()
+    return render_template('/views/secretaria/solicitudesUnidad.html', solicitudes=solicitudes, departamento=departamento, unidad=unidad)
 
+@app.route('/gestionarSolicitud/<int:id>/<int:idSolicitud>', methods=['GET','POST'])
+@login_required
+def gestionarSolicitud(id, idSolicitud):
+    usuario = db.session.execute(db.select(Usuario).filter_by(id=id)).scalar_one()
+    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
+    return render_template('views/funcionario/gestionarSolicitud.html', id=id, idSolicitud=idSolicitud, usuario=usuario, solicitud=solicitud)
 
 #RUTAS FUNCIONARIO
 @app.route('/funcionario', methods=['GET','POST'])
@@ -315,29 +325,10 @@ def edit_usuario(id):
         usuario.departamento = request.form['departamento']
         usuario.unidad = request.form['unidad']
         db.session.commit()
+        flash("¡Usuario editado exitosamente!", 'primary')
         return redirect(url_for('adminCrudUsuarios'))
     usuario = db.session.execute(db.select(Usuario).filter_by(id=id)).scalar_one()
     return render_template('views/admin/editarUsuario.html', usuario=usuario)
-
-#UPDATE SOLICITUD(OIRS)
-#Edit de solicitud que redirige a la vista de OIRS
-@app.route('/oedits/<int:idSolicitud>', methods=['GET','POST'])
-@login_required
-def Oedit_solicitud(idSolicitud):
-    if request.method == 'POST':
-        solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
-        solicitud.numero = request.form['numero']
-        solicitud.fechaDeIngreso = request.form['fechaDeIngreso']
-        solicitud.fechaDeVencimiento = request.form['fechaDeVencimiento']
-        solicitud.nombreSolicitante = request.form['nombreSolicitante']
-        solicitud.materia = request.form['materia']
-        solicitud.tipo = request.form['tipo']
-        solicitud.departamento = request.form['departamento']
-        solicitud.usuarioID = request.form['funcionario']
-        db.session.commit()
-        return redirect(url_for('oirsCrudSolicitudes'))
-    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
-    return render_template('views/editarSolicitud.html',solicitud=solicitud)
 
 #UPDATE SOLICITUD(Admin)
 #Edit de solicitud que redirige a la vista de Admin
@@ -359,11 +350,43 @@ def Aedit_solicitud(idSolicitud):
     solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
     return render_template('views/editarSolicitud.html',solicitud=solicitud)
 
-###   DELETES   ###
-#DELETE SOLICITUD
-@app.route('/deletes/<int:idSolicitud>')
+
+#UPDATE SOLICITUD(OIRS)
+#Edit de solicitud que redirige a la vista de OIRS
+@app.route('/oedits/<int:idSolicitud>', methods=['GET','POST'])
 @login_required
-def delete_solicitud(idSolicitud):
+def Oedit_solicitud(idSolicitud):
+    if request.method == 'POST':
+        solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
+        solicitud.numero = request.form['numero']
+        solicitud.fechaDeIngreso = request.form['fechaDeIngreso']
+        solicitud.fechaDeVencimiento = request.form['fechaDeVencimiento']
+        solicitud.nombreSolicitante = request.form['nombreSolicitante']
+        solicitud.materia = request.form['materia']
+        solicitud.tipo = request.form['tipo']
+        solicitud.departamento = request.form['departamento']
+        solicitud.usuarioID = request.form['funcionario']
+        db.session.commit()
+        return redirect(url_for('oirsCrudSolicitudes'))
+    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
+    return render_template('views/editarSolicitud.html',solicitud=solicitud)
+
+
+###   DELETES   ###
+#DELETE SOLICITUD(Admin)
+@app.route('/adeletes/<int:idSolicitud>')
+@login_required
+def adeletes(idSolicitud):
+    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
+    db.session.delete(solicitud)
+    db.session.commit()
+    solicitudes = get_solicitudes()
+    return redirect(url_for('adminCrudSolicitudes', solicitudes=solicitudes))
+
+#DELETE SOLICITUD(Oirs)
+@app.route('/odeletes/<int:idSolicitud>')
+@login_required
+def odeletes(idSolicitud):
     solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
     db.session.delete(solicitud)
     db.session.commit()
@@ -377,6 +400,7 @@ def delete_usuario(id):
     usuario = db.session.execute(db.select(Usuario).filter_by(id=id)).scalar_one()
     db.session.delete(usuario)
     db.session.commit()
+    flash("¡Usuario eliminado exitosamente!",'danger')
     usuarios = get_users()
     return redirect(url_for('adminCrudUsuarios', usuarios=usuarios))
 
