@@ -18,10 +18,10 @@
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               <li class="nav-item">
-                <a class="nav-item nav-link" href="{{ url_for('funSolIngresadas') }}">Solicitudes ingresadas</a>
+                <a class="nav-item nav-link" href="{{ url_for('funSolIngresadas') }}"><i class="fa-solid fa-list-check"></i> Solicitudes ingresadas</a>
               </li>
               <li class="nav-item">
-                <a class="nav-item nav-link" href="{{ url_for('funSolPendientes') }}">Solicitudes en proceso</a>
+                <a class="nav-item nav-link" href="{{ url_for('funSolPendientes') }}"><i class="fa-solid fa-list-ol"></i> Solicitudes en proceso</a>
               </li>
             </ul>
             <div class="d-flex">
@@ -35,4 +35,5 @@
     {% endblock %}
 </body>
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='fontawesome/js/all.js') }}"></script>
 </html>

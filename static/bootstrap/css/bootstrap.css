@@ -436,6 +436,7 @@ th {
 
 label {
   display: inline-block;
+  color: var(--bs-black);
 }
 
 button {

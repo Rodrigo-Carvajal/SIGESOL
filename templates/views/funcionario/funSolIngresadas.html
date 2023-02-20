@@ -34,7 +34,7 @@
                             <td>{{ solicitud.tipo }}</td>
                             <td>{{ solicitud.usuarioID }}</td>
                             <td>
-                                <a name="gestionarSolicitud" id="gestionarSolicitud" class="btn btn-info" href="/gestionarSolicitud/{{current_user.id}}/{{solicitud.idSolicitud}}" role="button">Gestionar</a>
+                                <a name="gestionarSolicitud" id="gestionarSolicitud" class="btn btn-info" href="/gestionarSolicitud/{{current_user.id}}/{{solicitud.idSolicitud}}/{{solicitud.departamento}}/{{solicitud.unidad}}" role="button">Gestionar</a>
                             </td>
                         </tr>
                     {% endif %}

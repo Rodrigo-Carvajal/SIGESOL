@@ -19,7 +19,7 @@
                             </div>
                             <div class="input-group-md mb-3 form-floating">
                                 <input type="date" class="form-control" id="fechaDeIngreso" name="fechaDeIngreso" required>
-                                <label  for="fechaDeIngreso">Fecha de ingreso de la solicitud</label>
+                                <label  for="fechaDeIngreso" >Fecha de ingreso de la solicitud</label>
                             </div>
                             <div class="input-group-md mb-3 form-floating">
                                 <input type="date" class="form-control" id="fechaDeVencimiento" name="fechaDeVencimiento" required>
@@ -90,7 +90,7 @@
                         {% endif %}
                     {% endwith %}
                     <div class="row-md mb-2">
-                        <button type="submit" class="btn btn-primary">Crear solicitud</button>        
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Crear solicitud</button>        
                     </div>
                 </div>        
             </form>
@@ -127,8 +127,8 @@
                                     <td>{{ solicitud.unidad }}</td>
                                     <td>{{ solicitud.usuarioID }}</td>
                                     <td>
-                                        <a name="editSolicitud" id="editSolicitud" class="btn btn-info" href="/aedits/{{solicitud.idSolicitud}}" role="button">Editar</a>
-                                        <a name="deleteSolicitud" id="deleteSolicitud" class="btn btn-danger" href="/adeletes/{{solicitud.idSolicitud}}" role="button">Eliminar</a>
+                                        <a name="editSolicitud" id="editSolicitud" class="btn btn-info" href="/aedits/{{solicitud.idSolicitud}}" role="button"><i class="fa-regular fa-edit"></i> Editar</a>
+                                        <a name="deleteSolicitud" id="deleteSolicitud" class="btn btn-danger" href="/adeletes/{{solicitud.idSolicitud}}" role="button"><i class="fa-solid fa-x"></i> Eliminar</a>
                                     </td>
                                 </tr>
                             {% endfor %}

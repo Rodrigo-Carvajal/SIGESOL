@@ -41,7 +41,7 @@
                                         <td>{{ solicitud.unidad }}</td>
                                         <td>                                        
                                             <form action="" method="POST">                                                
-                                                <a name="asignarUnidad" id="asignarUnidad" class="btn btn-info" href="/asignarUnidad/{{solicitud.idSolicitud}}" role="button">Asignar unidad</a>
+                                                <a name="asignarUnidad" id="asignarUnidad" class="btn btn-info" href="/asignarUnidad/{{current_user.nombreUsuario}}/{{solicitud.idSolicitud}}" role="button">Asignar unidad</a>
                                             </form>
                                         </td>
                                     </tr>

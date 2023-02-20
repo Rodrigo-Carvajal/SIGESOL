@@ -75,7 +75,7 @@
                                             <option value="UFDDC análisis">Unidad radiológica</option>
                                             <option value="Fernando Gatica">Fernando Gatica</option>
                                             <option value="Katherine Ampuero">Katherine Ampuero</option>
-                                            <option value="Abogado 3">Abogado 3</option>
+                                            <option value="Andrés Hidalgo">Andrés Hidalgo</option>
                                             <option value="Centro adiestramiento">Centro adiestramiento</option>
                                             <option value="DTI">DTI</option>
                                             <option value="Marítimo">Marítimo</option>
@@ -121,7 +121,7 @@
                                 {% endif %}
                             {% endwith %}
                             <div class="row-md">
-                                <button type="submit" class="btn btn-primary mb-2">Crear usuario</button>        
+                                <button type="submit" class="btn btn-primary mb-2"><i class="fa-solid fa-plus"></i> Crear usuario</button>        
                             </div>
                         </div>
                     </form>
@@ -150,8 +150,8 @@
                                             <td>{{ usuario.departamento }}</td>
                                             <td>{{ usuario.unidad }}</td>
                                             <td>
-                                                <a name="editUSuario" id="editUsuario" class="btn btn-info" href="/editu/{{usuario.id}}" role="button">Editar</a>
-                                                <a name="deleteUSuario" id="deleteUsuario" class="btn btn-danger" href="/deleteu/{{usuario.id}}" role="button">Eliminar</a>
+                                                <a name="editUSuario" id="editUsuario" class="btn btn-info" href="/editu/{{usuario.id}}" role="button"><i class="fa-regular fa-edit"></i> Editar</a>
+                                                <a name="deleteUSuario" id="deleteUsuario" class="btn btn-danger" href="/deleteu/{{usuario.id}}" role="button"><i class="fa-solid fa-x"></i> Eliminar</a>
                                             </td>
                                         </tr>
                                     {% endfor %}

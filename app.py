@@ -7,12 +7,13 @@ from flask_socketio import SocketIO
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import config
 from datetime import datetime
+import base64
 
 #Instanciación de objetos para la aplicación
 app = Flask(__name__)
 app.secret_key = 'smcnkaej42qownafa0ckco2q'
 csrf = CSRFProtect(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root@localhost/sigesol3"
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root@localhost/sigesol4"
 db = SQLAlchemy()
 socketio = SocketIO(app)
 login_manager = LoginManager(app)
@@ -80,17 +81,16 @@ class Solicitud(db.Model):
 
 class Estado(db.Model):
     __tablename__ = 'estadoSolicitudes'
-    idInternoDepto = db.Column(db.Integer, primary_key=True)
-    idModificacion = db.Column(db.Integer, primary_key=True)
+    (idInternoDepto, idModificacion) = (db.Column(db.Integer, primary_key=True),db.Column(db.Integer, primary_key=True, autoincrement=True))
     fkIdSolicitud = db.Column(db.Integer, db.ForeignKey('solicitudes.idSolicitud'), nullable=False)
     nombreUsuario = db.Column(db.String(20), db.ForeignKey('usuarios.nombreUsuario'), nullable=False)
     descripcionProceso = db.Column(db.String(100), nullable=False)
     fechaModificacion = db.Column(db.Date, default=datetime.now().strftime('%d-%m-%Y'), nullable=False)
     antecedentePDF = db.Column(db.LargeBinary)
     designadoA = db.Column(db.String(60), nullable=False)
-    estado = db.Column(db.String(20), nullable=False)
+    estadoActual = db.Column(db.String(20), nullable=False)
 
-    def __init__(self, idInternoDepto, fkIdSolicitud, idModificacion, nombreUsuario, descripcionProceso, fechaModificacion, antecedentePDF, designadoA, estado):
+    def __init__(self, idInternoDepto, fkIdSolicitud, idModificacion, nombreUsuario, descripcionProceso, fechaModificacion, antecedentePDF, designadoA, estadoActual):
         self.idInternoDepto = idInternoDepto
         self.fkIdSolicitud = fkIdSolicitud
         self.idModificacion = idModificacion
@@ -99,7 +99,7 @@ class Estado(db.Model):
         self.fechaModificacion = fechaModificacion
         self.antecedentePDF = antecedentePDF
         self.designadoA = designadoA
-        self.estado = estado      
+        self.estadoActual = estadoActual
 
     def __repr__(self):
         return f"Estado de la solicitud('{self.idInternoDepto}','{self.fkIdSolicitud}' modificada N° '{self.idModificacion}' realizada por el usuario '{self.nombreUsuario}' en la fecha '{self.fechaModificacion}','{self.estado}','{self.designadoA}')"
@@ -122,6 +122,14 @@ def get_solicitudes():
     for solicitud in all_solicitudes:
         solicitudes.append({"idSolicitud":solicitud.idSolicitud, "numero":solicitud.numero, "fechaDeIngreso":solicitud.fechaDeIngreso, "horaDeIngreso":solicitud.horaDeIngreso, "fechaDeVencimiento":solicitud.fechaDeVencimiento, "nombreSolicitante":solicitud.nombreSolicitante, "materia":solicitud.materia, "tipo":solicitud.tipo, "departamento":solicitud.departamento, "unidad":solicitud.unidad, "usuarioID":solicitud.usuarioID})
     return solicitudes
+
+def get_estados():
+    estados = []
+    #all_solicitudes = Solicitud.query.all()
+    all_estados = db.session.execute(db.select(Estado).order_by(Estado.idInternoDepto)).scalars()
+    for estado in all_estados:
+        estados.append({"idInternoDepto":estado.idInternoDepto, "fkIdSolicitud":estado.fkIdSolicitud, "idModificacion":estado.idModificacion, "nombreUsuario":estado.nombreUsuario, "descripcionProceso":estado.descripcionProceso, "fechaModificacion":estado.fechaModificacion, "antecedentePDF":estado.antecedentePDF, "designadoA":estado.designadoA, "estadoActual":estado.estadoActual})
+    return estados
 
 @login_manager.user_loader
 def load_user(id):
@@ -266,23 +274,44 @@ def secreSolIngresadas():
         return render_template('views/secretaria/asignarUnidad/'.format(idSolicitud))
     return render_template('views/secretaria/secreSolIngresadas.html', solicitudes=solicitudes)
 
-@app.route('/asignarUnidad/<int:idSolicitud>', methods=['GET','POST'])
+@app.route('/asignarUnidad/<string:nombreUsuario>/<int:idSolicitud>', methods=['GET','POST'])
 @login_required
-def asignarUnidad(idSolicitud):
+def asignarUnidad(nombreUsuario, idSolicitud):
     if request.method == "POST":
         solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
         unidad = request.form['unidad']
         solicitud.unidad = unidad
+        estado = Estado(
+            idInternoDepto = request.form['idInternoDepto'],
+            fkIdSolicitud = idSolicitud,
+            nombreUsuario = nombreUsuario,
+            idModificacion = request.form['idModificacion'],
+            descripcionProceso = request.form['descripcionProceso'],
+            fechaModificacion = request.form['fechaModificacion'],
+            designadoA = solicitud.unidad,
+            antecedentePDF = (request.form['antecedentePDF']),
+            estadoActual = request.form['estadoActual']
+        )
+        db.session.add(estado)
         db.session.commit()
         return redirect(url_for('secreSolIngresadas'))
     solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
-    return render_template('views/secretaria/asignarUnidad.html', solicitud=solicitud)
+    estado = Estado.query.filter_by(fkIdSolicitud = idSolicitud).first()
+    return render_template('views/secretaria/asignarUnidad.html', solicitud=solicitud, estado=estado)
         
 @app.route('/<string:departamento>/<string:unidad>', methods=['GET','POST'])
 @login_required
 def solicitudesunidad(departamento, unidad):
     solicitudes = get_solicitudes()
     return render_template('/views/secretaria/solicitudesUnidad.html', solicitudes=solicitudes, departamento=departamento, unidad=unidad)
+
+@app.route('/estadoSolicitud/<int:idSolicitud>', methods=['GET','POST'])
+@login_required
+def estadoSolicitud(idSolicitud):
+    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud))
+    estado = db.session.execute(db.select(Estado).filter_by(fkIdSolicitud=idSolicitud))
+    estados = get_estados()
+    return render_template('views/secretaria/estadoSolicitud.html', solicitud=solicitud, estado=estado, estados=estados)
 
 #RUTAS FUNCIONARIO
 @app.route('/funcionario', methods=['GET','POST'])
@@ -302,24 +331,24 @@ def funSolPendientes():
     solicitudes = get_solicitudes()
     return render_template('/views/funcionario/funSolPendientes.html', solicitudes=solicitudes)
 
-@app.route('/gestionarSolicitud/<int:id>/<int:idSolicitud>', methods=['GET','POST'])
+@app.route('/gestionarSolicitud/<int:id>/<int:idSolicitud>/<string:departamento>/<string:unidad>', methods=['GET','POST'])
 @login_required
-def gestionarSolicitud(id, idSolicitud):
-    usuario = db.session.execute(db.select(Usuario).filter_by(id=id)).scalar_one()
+def gestionarSolicitud(id, idSolicitud, departamento, unidad):
     solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
     if request.method == 'POST':
-        estado = Estado(
-            idInternoDepto = request.form['idInternoDepto'],
-            idModificacion = request.form['idModificacion'],
-            fkIdSolicitud = request.form['fkIdSolicitud'],
-            nombreUsuario = request.form['nombreUsuario'],
-            descripcionProceso = request.form['descripcionProceso'],
-            fechaModificacion = request.form['fechaModificacion'],
-            antecedentePDF = request.form['antecedentePDF'],
-            estado = request.form['']
-        )
-        
-    return render_template('views/funcionario/gestionarSolicitud.html', id=id, idSolicitud=idSolicitud, usuario=usuario, solicitud=solicitud, estado=estado)
+        estado = db.session.execute(db.select(Estado).filter_by(fkIdSolicitud=idSolicitud)).scalar_one()
+        estado.idInternoDepto = request.form['idInternoDepto'],
+        estado.idModificacion = request.form['idModificacion'],
+        estado.fkIdSolicitud = request.form['fkIdSolicitud'],
+        estado.nombreUsuario = request.form['nombreUsuario'],
+        estado.descripcionProceso = request.form['descripcionProceso'],
+        estado.fechaModificacion = request.form['fechaModificacion'],
+        estado.antecedentePDF = request.form['antecedentePDF'].encode(),
+        estado.estadoActual = request.form['estadoActual']
+        db.commit()
+        return render_template('views/admin/admin.html')
+    estado = db.session.execute(db.select(Estado).filter_by(fkIdSolicitud=idSolicitud)).scalar_one()
+    return render_template('views/funcionario/gestionarSolicitud.html', id=id, idSolicitud=idSolicitud, solicitud=solicitud, estado=estado, departamento=departamento, unidad=unidad)
 
 
 #####     Rutas CRUD     #####

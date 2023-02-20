@@ -22,15 +22,33 @@
               </div>
               <div class="col-5">
                 <form action="" method="POST" class="col-6">
-                    <input type="hidden" name="" id="" value="{{ solicitud.idSolicitud }}" disabled>
-                    <input type="hidden" name="" id="" value="{{ solicitud.numero }}" disabled>
-                    <input type="hidden" name="" id="" value="{{ solicitud.fechaDeIngreso }}" disabled>
-                    <input type="hidden" name="" id="" value="{{ solicitud.horaDeIngreso }}" disabled>
-                    <input type="hidden" name="" id="" value="{{ solicitud.fechaDeVencimiento}}" disabled>
-                    <input type="hidden" name="" id="" value="{{ solicitud.nombreSolicitante }}" disabled>
-                    <input type="hidden" name="" id="" value="{{ solicitud.materia }}" disabled>
-                    <input type="hidden" name="" id="" value="{{ solicitud.tipo }}" disabled>
-                    <input type="hidden" name="" id="" value="{{ solicitud.departamento }}" disabled>
+                    <div class="form-floating mb-3">
+                        <input class="form-control" type="number" name="idInternoDepto" id="idInternoDepto" required>
+                        <label for="formId1">Id interno </label>
+                      </div>
+                    <input type="hidden" name="idModificacion" id="idModificacion" value="1">
+                    <input type="hidden" name="antecedentePDF" id="antecedentePDF" >
+                    
+                    <input type="hidden" name="nombreUsuario" id="nombreUsuario" value="{{ current_user.nombreUsuario }}" disabled>
+                    <div class="form-floating mb-3">
+                      <input
+                        type="text"
+                        class="form-control" name="descripcionProceso" id="descripcionProceso" placeholder="">
+                      <label for="descripcionProceso">Descripción del proceso</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                      <input
+                        type="date"
+                        class="form-control" name="fechaModificacion" id="fechaModificacion" placeholder="">
+                      <label for="fechaModificacion">Fecha de asignación:</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                      <input
+                        type="text"
+                        class="form-control" name="estadoActual" id="estadoActual" placeholder="">
+                      <label for="estadoActual">Estado</label>
+                    </div>
+
                     <div class="mb-3">
                         <div class="input-group mb-3 form-floating">
                             <select class="form-select" id="unidad" name="unidad">
@@ -66,7 +84,7 @@
                                     <option value="Jefe de departamento">Jefe de departamento</option>
                                     <option value="Fernando Gatica">Fernando Gatica</option>
                                     <option value="Katherine Ampuero">Katherine Ampuero</option>
-                                    <option value="Abogado 3">Abogado 3</option>         
+                                    <option value="Andrés Hidalgo">Andrés Hidalgo</option>         
                                 {% endif %}
                                 {% if solicitud.departamento == "Departamento de operaciones"  %}
                                     <option selected>Elegir una unidad</option>
