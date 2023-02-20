@@ -284,13 +284,6 @@ def solicitudesunidad(departamento, unidad):
     solicitudes = get_solicitudes()
     return render_template('/views/secretaria/solicitudesUnidad.html', solicitudes=solicitudes, departamento=departamento, unidad=unidad)
 
-@app.route('/gestionarSolicitud/<int:id>/<int:idSolicitud>', methods=['GET','POST'])
-@login_required
-def gestionarSolicitud(id, idSolicitud):
-    usuario = db.session.execute(db.select(Usuario).filter_by(id=id)).scalar_one()
-    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
-    return render_template('views/funcionario/gestionarSolicitud.html', id=id, idSolicitud=idSolicitud, usuario=usuario, solicitud=solicitud)
-
 #RUTAS FUNCIONARIO
 @app.route('/funcionario', methods=['GET','POST'])
 @login_required
@@ -308,6 +301,26 @@ def funSolIngresadas():
 def funSolPendientes():
     solicitudes = get_solicitudes()
     return render_template('/views/funcionario/funSolPendientes.html', solicitudes=solicitudes)
+
+@app.route('/gestionarSolicitud/<int:id>/<int:idSolicitud>', methods=['GET','POST'])
+@login_required
+def gestionarSolicitud(id, idSolicitud):
+    usuario = db.session.execute(db.select(Usuario).filter_by(id=id)).scalar_one()
+    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
+    if request.method == 'POST':
+        estado = Estado(
+            idInternoDepto = request.form['idInternoDepto'],
+            idModificacion = request.form['idModificacion'],
+            fkIdSolicitud = request.form['fkIdSolicitud'],
+            nombreUsuario = request.form['nombreUsuario'],
+            descripcionProceso = request.form['descripcionProceso'],
+            fechaModificacion = request.form['fechaModificacion'],
+            antecedentePDF = request.form['antecedentePDF'],
+            estado = request.form['']
+        )
+        
+    return render_template('views/funcionario/gestionarSolicitud.html', id=id, idSolicitud=idSolicitud, usuario=usuario, solicitud=solicitud, estado=estado)
+
 
 #####     Rutas CRUD     #####
 
