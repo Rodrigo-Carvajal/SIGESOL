@@ -13,7 +13,7 @@ import base64
 app = Flask(__name__)
 app.secret_key = 'smcnkaej42qownafa0ckco2q'
 csrf = CSRFProtect(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root@localhost/sigesol4"
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root@localhost/sigesol10"
 db = SQLAlchemy()
 socketio = SocketIO(app)
 login_manager = LoginManager(app)
@@ -81,24 +81,23 @@ class Solicitud(db.Model):
 
 class Estado(db.Model):
     __tablename__ = 'estadoSolicitudes'
-    idInternoDepto = db.Column(db.Integer, unique=True)
+    fkIdSolicitud = db.Column(db.Integer, db.ForeignKey('solicitudes.idSolicitud'), primary_key=True, nullable=False)
+    idInternoDepto = db.Column(db.Integer, nullable=False, autoincrement=True)
     idModificacion = db.Column(db.Integer, primary_key=True)
-    fkIdSolicitud = db.Column(db.Integer, db.ForeignKey('solicitudes.idSolicitud'), nullable=False, unique=True)
     nombreUsuario = db.Column(db.String(20), db.ForeignKey('usuarios.nombreUsuario'), nullable=False)
     descripcionProceso = db.Column(db.String(100), nullable=False)
     fechaModificacion = db.Column(db.Date, default=datetime.now().strftime('%d-%m-%Y'), nullable=False)
-    antecedentePDF = db.Column(db.LargeBinary)
     designadoA = db.Column(db.String(60), nullable=False)
     estadoActual = db.Column(db.String(20), nullable=False)
 
-    def __init__(self, idInternoDepto, fkIdSolicitud, idModificacion, nombreUsuario, descripcionProceso, fechaModificacion, antecedentePDF, designadoA, estadoActual):
+    def __init__(self, idInternoDepto, fkIdSolicitud, idModificacion, nombreUsuario, descripcionProceso, fechaModificacion, designadoA, estadoActual):
         self.idInternoDepto = idInternoDepto
         self.fkIdSolicitud = fkIdSolicitud
         self.idModificacion = idModificacion
         self.nombreUsuario = nombreUsuario
         self.descripcionProceso = descripcionProceso
         self.fechaModificacion = fechaModificacion
-        self.antecedentePDF = antecedentePDF
+
         self.designadoA = designadoA
         self.estadoActual = estadoActual
     
@@ -133,12 +132,13 @@ def get_solicitudes():
         solicitudes.append({"idSolicitud":solicitud.idSolicitud, "numero":solicitud.numero, "fechaDeIngreso":solicitud.fechaDeIngreso, "horaDeIngreso":solicitud.horaDeIngreso, "fechaDeVencimiento":solicitud.fechaDeVencimiento, "nombreSolicitante":solicitud.nombreSolicitante, "materia":solicitud.materia, "tipo":solicitud.tipo, "departamento":solicitud.departamento, "unidad":solicitud.unidad, "usuarioID":solicitud.usuarioID})
     return solicitudes
 
+#Función que retorna todos los estados de una solicitud
 def get_estados():
     estados = []
     #all_solicitudes = Solicitud.query.all()
-    all_estados = db.session.execute(db.select(Estado).order_by(Estado.idInternoDepto)).scalars()
+    all_estados = db.session.execute(db.select(Estado).order_by(Estado.fkIdSolicitud)).scalars()
     for estado in all_estados:
-        estados.append({"idInternoDepto":estado.idInternoDepto, "fkIdSolicitud":estado.fkIdSolicitud, "idModificacion":estado.idModificacion, "nombreUsuario":estado.nombreUsuario, "descripcionProceso":estado.descripcionProceso, "fechaModificacion":estado.fechaModificacion, "antecedentePDF":estado.antecedentePDF, "designadoA":estado.designadoA, "estadoActual":estado.estadoActual})
+        estados.append({"idInternoDepto":estado.idInternoDepto, "fkIdSolicitud":estado.fkIdSolicitud, "idModificacion":estado.idModificacion, "nombreUsuario":estado.nombreUsuario, "descripcionProceso":estado.descripcionProceso, "fechaModificacion":estado.fechaModificacion, "designadoA":estado.designadoA, "estadoActual":estado.estadoActual})
     return estados
 
 @login_manager.user_loader
@@ -266,6 +266,7 @@ def oirsCrudSolicitudes():
         )
         db.session.add(solicitud)
         db.session.commit()
+        flash("¡Solicitud creada exitosamente!", 'success')
         return redirect(url_for('oirsCrudSolicitudes'))
     return render_template('views/oirs/oirsCrudSolicitudes.html', solicitudes=solicitudes, current_time=current_time)
 
@@ -299,7 +300,7 @@ def asignarUnidad(nombreUsuario, idSolicitud):
             descripcionProceso = request.form['descripcionProceso'],
             fechaModificacion = request.form['fechaModificacion'],
             designadoA = solicitud.unidad,
-            antecedentePDF = (request.form['antecedentePDF']),
+
             estadoActual = request.form['estadoActual']
         )
         db.session.add(estado)
@@ -317,11 +318,11 @@ def solicitudesunidad(departamento, unidad):
 
 @app.route('/estadoSolicitud/<int:idSolicitud>', methods=['GET','POST'])
 @login_required
-def estadoSolicitud(idSolicitud):
-    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud))
-    estado = db.session.execute(db.select(Estado).filter_by(fkIdSolicitud=idSolicitud))
+def estadoSolicitud(idSolicitud):    
+    solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
+    estado = db.session.execute(db.select(Estado).filter_by(fkIdSolicitud=idSolicitud)).scalar_one()
     estados = get_estados()
-    return render_template('views/secretaria/estadoSolicitud.html', solicitud=solicitud, estado=estado, estados=estados)
+    return render_template('views/secretaria/estadoSolicitud.html', solicitud=solicitud, estado=estado, estados=estados, idSolicitud=idSolicitud, fkIdSolicitud=idSolicitud)
 
 #RUTAS FUNCIONARIO
 @app.route('/funcionario', methods=['GET','POST'])
@@ -346,17 +347,19 @@ def funSolPendientes():
 def gestionarSolicitud(id, idSolicitud, departamento, unidad):
     solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
     if request.method == 'POST':
-        estado = db.session.execute(db.select(Estado).filter_by(fkIdSolicitud=idSolicitud)).scalar_one()
-        estado.idInternoDepto = request.form['idInternoDepto'],
-        estado.idModificacion = request.form['idModificacion'],
-        estado.fkIdSolicitud = request.form['fkIdSolicitud'],
-        estado.nombreUsuario = request.form['nombreUsuario'],
-        estado.descripcionProceso = request.form['descripcionProceso'],
-        estado.fechaModificacion = request.form['fechaModificacion'],
-        estado.antecedentePDF = request.form['antecedentePDF'].encode(),
-        estado.estadoActual = request.form['estadoActual']
-        db.commit()
-        return render_template('views/admin/admin.html')
+        estado = Estado(
+            idInternoDepto = request.form['idInternoDepto'],
+            idModificacion = request.form['idModificacion'],
+            fkIdSolicitud = request.form['fkIdSolicitud'],
+            nombreUsuario = request.form['nombreUsuario'],
+            descripcionProceso = request.form['descripcionProceso'],
+            fechaModificacion = request.form['fechaModificacion'],
+            designadoA = request.form['designadoA'],
+            estadoActual = request.form['estadoActual']
+        )
+        db.session.commit()
+        solicitudes = get_solicitudes()
+        return render_template('views/funcionario/funSolIngresadas.html',solicitudes=solicitudes)
     estado = db.session.execute(db.select(Estado).filter_by(fkIdSolicitud=idSolicitud)).scalar_one()
     return render_template('views/funcionario/gestionarSolicitud.html', id=id, idSolicitud=idSolicitud, solicitud=solicitud, estado=estado, departamento=departamento, unidad=unidad)
 
@@ -429,9 +432,17 @@ def Oedit_solicitud(idSolicitud):
 @app.route('/adeletes/<int:idSolicitud>')
 @login_required
 def adeletes(idSolicitud):
+    estado = Estado.query.filter_by(fkIdSolicitud=idSolicitud).first()
     solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
-    db.session.delete(solicitud)
-    db.session.commit()
+    if estado == None:
+        db.session.delete(solicitud)
+        db.session.commit()
+        flash("¡Solcitiud eliminada exitosamente!",'warning')
+    else:
+        db.session.delete(solicitud)
+        db.session.delete(estado)
+        db.session.commit()
+        flash("¡Solcitiud eliminada exitosamente!",'warning')
     solicitudes = get_solicitudes()
     return redirect(url_for('adminCrudSolicitudes', solicitudes=solicitudes))
 
@@ -439,9 +450,17 @@ def adeletes(idSolicitud):
 @app.route('/odeletes/<int:idSolicitud>')
 @login_required
 def odeletes(idSolicitud):
+    estado = Estado.query.filter_by(fkIdSolicitud=idSolicitud).first()
     solicitud = db.session.execute(db.select(Solicitud).filter_by(idSolicitud=idSolicitud)).scalar_one()
-    db.session.delete(solicitud)
-    db.session.commit()
+    if estado == None:
+        db.session.delete(solicitud)
+        db.session.commit()
+        flash("¡Solicitud eliminada exitosamente!",'warning')
+    else:
+        db.session.delete(solicitud)
+        db.session.delete(estado)
+        db.session.commit()
+        flash("¡Solicitud eliminada exitosamente!",'warning')
     solicitudes = get_solicitudes()
     return redirect(url_for('oirsCrudSolicitudes', solicitudes=solicitudes))
 

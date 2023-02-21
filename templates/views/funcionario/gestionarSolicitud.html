@@ -8,31 +8,34 @@
                 <h2>Gestión de la solicitud #{{ solicitud.idSolicitud }}</h2>
                 <p>Esta solicitud es de tipo {{solicitud.tipo}}, asignada por {{solicitud.nombreSolicitante}} y fue ingresada al sistema por {{solicitud.usuarioID}}</p>
                 <hr>
-                <form action="" method="POST"></form>
+                <form action="" method="POST" enctype="multipart/form-data">
                     <div class="row g-2 bg-light">
                         <div class="container text-center col-lg-12">
                             <div class="col p-2">
                                 <div class="form-floating col-lg-12 mb-3">
-                                    <input type="text" name="fkIdSolicitud" class="form-control" id="fkIdSolicitud" value="{{solicitud.idSolicitud}}" disabled>
+                                    <input type="text" name="fkIdSolicitud" class="form-control" id="fkIdSolicitud" value="{{solicitud.idSolicitud}}" >
                                     <label for="fkIdSolicitud">Id general de la solicitud:</label>
                                 </div>
                                 <div class="form-floating col-lg-12 mb-3">
-                                    <input type="text" class="form-control" id="nombreUsuario" name="nombreUsuario" value="{{current_user.nombreUsuario}}" required disabled>
+                                    <input type="text" class="form-control" id="nombreUsuario" name="nombreUsuario" value="{{current_user.nombreUsuario}}" required >
                                     <label for="nombreUsuario">Nombre del usuario que esta realizando la modificación:</label>
-                                </div>
-                                
-                            </div>
-                            <div class="col p-2">
+                                </div>                                                            
                                 <div class="form-floating col-lg-12 mb-3">                                
-                                    <input type="text" class="form-control" name="idInternoDepto" id="idInternoDepto" value="{{estado.idInternoDepto}}" disabled>
+                                    <input type="text" class="form-control" name="idInternoDepto" id="idInternoDepto" value="{{estado.idInternoDepto}}" >
                                     <label for="idInternoDepto">Id interno del departamento:</label>
                                 </div>
                                 <div class="form-floating col-lg-12 mb-3">
-                                    <input type="text" name="idModificacion" class="form-control" id="idModificacion" value="{{estado.idModificacion}}" disabled>
+                                    <input type="text" name="idModificacion" class="form-control" id="idModificacion" value="{{estado.idModificacion+1}}" >
                                     <label for="idModificacion">Número de la modificación:</label>
                                 </div>
                             </div>
                             <div class="col-lg-6 form-floating m-2">
+                                <div class="form-floating mb-3">
+                                  <input
+                                    type="text"
+                                    class="form-control" name="estadoActual" id="estadoActual" placeholder="">
+                                  <label for="estadoActual">Estado actual de la solicitud</label>
+                                </div>
                                 <div class=" form-floating mb-3">
                                     <input type="date" class="form-control" id="fechaModificacion" name="fechaModificacion" required>
                                     <label for="fechaModificacion">Ingrese la fecha actual:</label>
@@ -40,18 +43,12 @@
                                 <div class="form-floating mb-3">
                                     <input type="text" name="designadoA" class="form-control" id="designadoA" value="{{solicitud.unidad}}">
                                     <label for="designadoA">El siguiente proceso de la solicitud es designado a:</label>
-                                </div>                                                                                                                    
+                                </div>                                                            
                                 <div class="mb-3 form-floating">
                                 <textarea class="form-control" name="descripcionProceso" id="descripcionProceso" rows="3"></textarea>
                                 <label for="descripcionProceso">Escriba una breve descripción del proceso actual:</label>
-                                </div>
-                                <div class="form-floating mb-3">
-                                <input type="file" class="form-control" name="antecedentePDF" id="antecedentePDF" placeholder="PDF">
-                                <label for="antecedentePDF">Subir antecedente</label>
-                                </div>
+                                </div>                                
                                 <div class="mb-3 form-floating">
-
-
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 </div>
                             </div>

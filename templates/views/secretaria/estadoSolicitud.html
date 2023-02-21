@@ -6,7 +6,7 @@
 <div class="row align-items-md-stretch">
     <div class="col-md-12">
         <div class="h-100 p-5 text-white bg-dark">
-            <h2>Estados de la solicitud {{solicitud.idSolicitud}}</h2>
+            <h2>Estados de la solicitud {{estado.fKIdSolicitud}}</h2>
             <p>Corresponde a la solicitud {{estado.idInternoDepto}} del departamento {{solicitud.departamento}} de la unidad {{solicitud.unidad}}</p>
             <hr>
             <div class="container-fluid mt-2">
@@ -28,6 +28,7 @@
                         </thead>
                         <tbody>
                             {% for estado in estados %}
+                                {% if idSolicitud == estado.fkIdSolicitud %}
                                     <tr class="scope">
                                         <td>{{ estado.fkIdSolicitud }}</td>
                                         <td>{{ estado.idInternoDepto }}</td>
@@ -42,6 +43,7 @@
                                             <a name="editSolicitud" id="editSolicitud" class="btn btn-info" href="/estadoSolicitud/{{solicitud.idSolicitud}}" role="button"><i class="fa-solid fa-eye"></i> Ver estado</a>
                                         </td>
                                     </tr>
+                                {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>

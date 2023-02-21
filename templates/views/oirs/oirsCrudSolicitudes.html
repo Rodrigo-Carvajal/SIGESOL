@@ -83,6 +83,18 @@
                             </div>
                         </div>
                     </div>
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            <div class="d-flex align-items-center justify-content-center">
+                                {% for category,message in messages %}
+                                    <div class="alert col-lg-2  alert-{{category}} alert-dismissible show fade" role="alert">
+                                        <strong>{{message}}</strong> 
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>                        
+                                    </div>    
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
                     <div class="row-md mb-2">
                         <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Crear solicitud</button>        
                     </div>
@@ -121,7 +133,7 @@
                                     <td>{{ solicitud.unidad }}</td>
                                     <td>{{ solicitud.usuarioID }}</td>
                                     <td>
-                                        </i><a name="editSolicitud" id="editSolicitud" class="btn btn-info " href="/oedits/{{solicitud.idSolicitud}}" role="button"><i class="fa-regular fa-edit"></i> Editar</a>
+                                        </i><a name="editSolicitud" id="editSolicitud" class="btn btn-info " href="/oedits/{{solicitud.idSolicitud}}" role="button"><i class="fa-solid fa-pen-nib"></i> Editar</a>
                                         <a name="deleteSolicitud" id="deleteSolicitud" class="btn btn-danger " href="/odeletes/{{solicitud.idSolicitud}}" role="button"> <i class="fa-solid fa-x"></i> Eliminar</a>
                                     </td>
                                 </tr>
