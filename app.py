@@ -81,8 +81,9 @@ class Solicitud(db.Model):
 
 class Estado(db.Model):
     __tablename__ = 'estadoSolicitudes'
-    (idInternoDepto, idModificacion) = (db.Column(db.Integer, primary_key=True),db.Column(db.Integer, primary_key=True, autoincrement=True))
-    fkIdSolicitud = db.Column(db.Integer, db.ForeignKey('solicitudes.idSolicitud'), nullable=False)
+    idInternoDepto = db.Column(db.Integer, unique=True)
+    idModificacion = db.Column(db.Integer, primary_key=True)
+    fkIdSolicitud = db.Column(db.Integer, db.ForeignKey('solicitudes.idSolicitud'), nullable=False, unique=True)
     nombreUsuario = db.Column(db.String(20), db.ForeignKey('usuarios.nombreUsuario'), nullable=False)
     descripcionProceso = db.Column(db.String(100), nullable=False)
     fechaModificacion = db.Column(db.Date, default=datetime.now().strftime('%d-%m-%Y'), nullable=False)
@@ -100,6 +101,15 @@ class Estado(db.Model):
         self.antecedentePDF = antecedentePDF
         self.designadoA = designadoA
         self.estadoActual = estadoActual
+    
+    def generar_id_interno(self):
+        ultima_solicitud = Solicitud.query.filter_by(idInternoDepto=self.idInternoDepto).order_by(Solicitud.idInternoDepto.desc()).first()
+        if ultima_solicitud is None:
+            return f'{self.departamento.abreviacion}-001'
+        else:
+            ultimo_id = int(ultima_solicitud.id_interno.split('-')[-1])
+            nuevo_id = ultimo_id + 1
+            return f'{self.departamento.abreviacion}-{nuevo_id:03d}'
 
     def __repr__(self):
         return f"Estado de la solicitud('{self.idInternoDepto}','{self.fkIdSolicitud}' modificada N° '{self.idModificacion}' realizada por el usuario '{self.nombreUsuario}' en la fecha '{self.fechaModificacion}','{self.estado}','{self.designadoA}')"
