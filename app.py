@@ -82,7 +82,7 @@ class Solicitud(db.Model):
 class Estado(db.Model):
     __tablename__ = 'estadoSolicitudes'
     fkIdSolicitud = db.Column(db.Integer, db.ForeignKey('solicitudes.idSolicitud'), primary_key=True, nullable=False)
-    idInternoDepto = db.Column(db.Integer, nullable=False, autoincrement=True)
+    idInternoDepto = db.Column(db.Integer, nullable=False, autoincrement=True, unique=True)
     idModificacion = db.Column(db.Integer, primary_key=True)
     nombreUsuario = db.Column(db.String(20), db.ForeignKey('usuarios.nombreUsuario'), nullable=False)
     descripcionProceso = db.Column(db.String(100), nullable=False)
@@ -300,7 +300,6 @@ def asignarUnidad(nombreUsuario, idSolicitud):
             descripcionProceso = request.form['descripcionProceso'],
             fechaModificacion = request.form['fechaModificacion'],
             designadoA = solicitud.unidad,
-
             estadoActual = request.form['estadoActual']
         )
         db.session.add(estado)
@@ -408,7 +407,7 @@ def Aedit_solicitud(idSolicitud):
 
 #UPDATE SOLICITUD(OIRS)
 #Edit de solicitud que redirige a la vista de OIRS
-@app.route('/oedits/<int:idSolicitud>', methods=['GET','POST'])
+@app.route('/oedits/<int:idSolicitud>', methods=['GET','POST']) 
 @login_required
 def Oedit_solicitud(idSolicitud):
     if request.method == 'POST':
